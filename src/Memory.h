@@ -14,14 +14,14 @@ public:
 	void detach();
 
 	template <typename T>
-	T read(LPVOID address) {
+	T read(LPVOID address) const {
 		T val;
 		ReadProcessMemory(handle, address, &val, sizeof(T), NULL);
 		return val;
 	}
 
 	template <typename T>
-	T write(LPVOID address, T value) {
+	T write(LPVOID address, T value) const {
 		return WriteProcessMemory(handle, address, &value, sizeof(T), NULL);
 	}
 
