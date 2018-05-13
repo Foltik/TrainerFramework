@@ -22,7 +22,7 @@ struct Hotkey {
     Identifier id;
     Callback callback;
     bool state = false;
-    long lastChange = 0;
+    bool toggle = false;
 };
 
 class Hotkeys {
@@ -33,6 +33,8 @@ public:
     void add(Identifier&& id, VoidCallback&& action);
     void addToggle(Identifier&& id, Callback&& action);
     void addHeld(Identifier&& id, Callback&& action);
+
+    bool shouldExit(char key);
 
 private:
     void tick(std::future<void> exitSignal);
