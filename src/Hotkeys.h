@@ -5,43 +5,41 @@
 #include <future>
 #include <queue>
 
-using Callback = std::function<void(bool)>;
-using VoidCallback = std::function<void()>;
-
 enum class HotkeyType {
     ONESHOT,
     TOGGLE,
     HELD
 };
 
-struct Identifier {
+class Hotkey {
+public:
+    Hotkey(char keyCode, const std::string& title, HotkeyType activationType, const std::function<void(bool)>& callback);
+
     char key;
     std::string name;
-};
+    HotkeyType type;
 
-struct Hotkey {
-    Identifier id;
-    Callback callback;
     bool state = false;
     bool toggle = false;
-    std::thread runThread;
+
+    std::function<void(bool)> cb;
 };
 
 class Hotkeys {
 public:
     Hotkeys();
+
     ~Hotkeys();
 
-    void add(Identifier&& id, VoidCallback&& action);
-    void addToggle(Identifier&& id, Callback&& action);
-    void addHeld(Identifier&& id, Callback&& action);
+    void add(char keyCode, const std::string& title, HotkeyType type, const std::function<void(bool)>& action);
 
     bool shouldExit(char key);
 
 private:
-    void pushCallback(std::function<void(bool)>& cb, bool arg);
+    void pushCallback(const std::function<void(bool)>& cb, bool arg);
 
     void tickKeys(std::future<void> exitSignal);
+
     void tickCalls(std::future<void> exitSignal);
 
     std::thread keypressThread;
@@ -52,6 +50,6 @@ private:
     std::thread callbackThread;
     std::promise<void> cbExitSignal;
 
-    std::vector<std::pair<Hotkey, HotkeyType>> hotkeys;
+    std::vector<Hotkey> hotkeys;
 };
 

@@ -5,6 +5,13 @@
 
 #define VK_PRESSED 0x8000
 
+Hotkey::Hotkey(char keyCode, const std::string& title, HotkeyType activationType, const std::function<void(bool)>& callback) {
+    key = keyCode;
+    name = title;
+    type = activationType;
+    cb = callback;
+}
+
 Hotkeys::Hotkeys() {
     keypressThread = std::thread(&Hotkeys::tickKeys, this, kpExitSignal.get_future());
     callbackThread = std::thread(&Hotkeys::tickCalls, this, cbExitSignal.get_future());
@@ -18,22 +25,11 @@ Hotkeys::~Hotkeys() {
     callbackThread.join();
 }
 
-void Hotkeys::add(Identifier&& id, VoidCallback&& action) {
-    Hotkey hotkey{id, [=](bool b) { action(); }, 0, false};
-    hotkeys.push_back({std::move(hotkey), HotkeyType::ONESHOT});
+void Hotkeys::add(char keyCode, const std::string& title, HotkeyType type, const std::function<void(bool)>& action) {
+    hotkeys.emplace_back(keyCode, title, type, action);
 }
 
-void Hotkeys::addToggle(Identifier&& id, Callback&& action) {
-    Hotkey hotkey{id, action, false, false};
-    hotkeys.push_back({std::move(hotkey), HotkeyType::TOGGLE});
-}
-
-void Hotkeys::addHeld(Identifier&& id, Callback&& action) {
-    Hotkey hotkey{id, action, false, false};
-    hotkeys.push_back({std::move(hotkey), HotkeyType::HELD});
-}
-
-void Hotkeys::pushCallback(std::function<void(bool)>& cb, bool arg) {
+void Hotkeys::pushCallback(const std::function<void(bool)>& cb, bool arg) {
     queueLock.lock();
     callQueue.push(std::bind(cb, arg));
     queueLock.unlock();
@@ -41,24 +37,22 @@ void Hotkeys::pushCallback(std::function<void(bool)>& cb, bool arg) {
 
 void Hotkeys::tickKeys(std::future<void> exitSignal) {
     while (exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout) {
-        for (auto& pair : hotkeys) {
-            auto& hotkey = pair.first;
-            auto& type = pair.second;
-            bool newState = static_cast<bool>(GetAsyncKeyState(hotkey.id.key) & VK_PRESSED);
-            switch (type) {
+        for (auto& hotkey : hotkeys) {
+            bool newState = static_cast<bool>(GetAsyncKeyState(hotkey.key) & VK_PRESSED);
+            switch (hotkey.type) {
                 case HotkeyType::ONESHOT:
                     if (!hotkey.state && newState)
-                        pushCallback(hotkey.callback, true);
+                        pushCallback(hotkey.cb, true);
                     break;
                 case HotkeyType::TOGGLE:
                     if (!hotkey.state && newState) {
                         hotkey.toggle = !hotkey.toggle;
-                        pushCallback(hotkey.callback, hotkey.toggle);
+                        pushCallback(hotkey.cb, hotkey.toggle);
                     }
                     break;
                 case HotkeyType::HELD:
                     if (hotkey.state != newState)
-                        pushCallback(hotkey.callback, newState);
+                        pushCallback(hotkey.cb, newState);
                     break;
             }
             hotkey.state = newState;

@@ -11,12 +11,13 @@ int main() {
 
     Hotkeys hotkeys;
 
-    hotkeys.addHeld({VK_F6, "Increase Runspeed"}, [&](bool enabled) {
+    hotkeys.add(VK_F6, "Increase Runspeed", HotkeyType::HELD, (const std::function<void(bool)>&)[&](bool enabled) {
         static uintptr_t addr;
         static uintptr_t code;
 
         if (enabled) {
-            addr = mem.findArrayOfBytes({0x5D, 0x00, 0xD9, 0x45, 0x00, 0x8D, 0x65, 0xF4, 0x5B, 0x5E, 0x5F, 0x5D, 0xC3}, "x?xx??????xxx", PAGE_EXECUTE_READWRITE, 16);
+            addr = mem.findArrayOfBytes({0x5D, 0x00, 0xD9, 0x45, 0x00, 0x8D, 0x65, 0xF4, 0x5B, 0x5E, 0x5F, 0x5D, 0xC3},
+                                        "x?xx??????xxx", PAGE_EXECUTE_READWRITE, 16);
 
             code = mem.allocate(0x1000, PAGE_EXECUTE_READWRITE);
             mem.writeArrayOfBytes(code, {0xDD, 0xD8, 0xD9, 0x05});
@@ -37,7 +38,7 @@ int main() {
         }
     });
 
-    while(!hotkeys.shouldExit(VK_F9)) {
+    while (!hotkeys.shouldExit(VK_F9)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
