@@ -18,7 +18,7 @@ public:
 	explicit Memory(const std::string& processName);
 	~Memory();
 
-	HANDLE getHandle() const;
+	HANDLE getHandle() const { return handle; };
 
 	bool attach(const std::string& processName);
 	void detach();
@@ -32,20 +32,23 @@ public:
 
 	template <typename T>
 	bool write(uintptr_t address, T value) {
-		return static_cast<bool>(WriteProcessMemory(handle, reinterpret_cast<LPVOID>(address), &value, sizeof(T), NULL));
+		return static_cast<bool>(WriteProcessMemory(handle, reinterpret_cast<LPVOID>(address),
+													&value, sizeof(T), nullptr));
 	}
 
-	bool writeArrayOfBytes(uintptr_t address, std::vector<uint8_t>&& bytes);
-
-	uintptr_t findArrayOfBytes(std::vector<uint8_t>&& bytes, uint32_t protect = 0, uintptr_t align = 1);
-	uintptr_t findArrayOfBytes(std::vector<uint8_t>&& target, const std::string& mask, uint32_t protect = 0, uintptr_t align = 1);
+	template <typename T>
+	bool writeData(uintptr_t address, const std::vector<T>& data) {
+		return static_cast<bool>(WriteProcessMemory(handle, reinterpret_cast<LPVOID>(address),
+													data.data(), sizeof(T) * data.size(), nullptr));
+	}
 
 	uintptr_t allocate(size_t size, uint32_t protect = 0, uintptr_t address = 0);
 	void free(uintptr_t address);
 
+    uintptr_t findPattern(const std::vector<uint8_t>& target, const std::string& mask = "", uint32_t protect = 0, uintptr_t align = 1);
+
 private:
-	std::map<std::vector<uint8_t>, uintptr_t> aobCache;
-	std::map<std::pair<std::vector<uint8_t>, std::string>, uintptr_t> aobMaskCache;
+	std::map<std::pair<std::vector<uint8_t>, std::string>, uintptr_t> patternCache;
 
     void findUsablePages();
     std::vector<Page> usablePages;
