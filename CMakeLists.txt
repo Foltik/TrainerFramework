@@ -1,6 +1,14 @@
-# cmake_minimum_required(VERSION <specify CMake version here>)
-project(StardewFisher)
+cmake_minimum_required(VERSION 3.10)
+project(TrainerFramework)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(StardewFisher src/main.cpp src/Console.h src/Console.cpp src/Memory.h src/Memory.cpp src/Hotkeys.cpp src/Hotkeys.h)
+set(${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
+if(${CMAKE_BUILD_TYPE} MATCHES "Release")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0")
+endif()
+
+add_executable(output src/main.cpp src/Console.h src/Console.cpp src/Memory.h src/Memory.cpp src/Hotkeys.cpp src/Hotkeys.h)
