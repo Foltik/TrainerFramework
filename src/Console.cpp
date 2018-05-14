@@ -2,8 +2,8 @@
 
 #include <Windows.h>
 
-void Console::setTitle(std::string_view title) {
-	SetConsoleTitleA(title.data());
+void Console::setTitle(const std::string& title) {
+	SetConsoleTitleA(title.c_str());
 }
 
 void Console::setFlags(long flags) {

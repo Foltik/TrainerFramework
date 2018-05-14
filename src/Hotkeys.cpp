@@ -1,16 +1,21 @@
 #include "Hotkeys.h"
 
 #include <Windows.h>
+#include <iostream>
 
 #define VK_PRESSED 0x8000
 
 Hotkeys::Hotkeys() {
-    hotkeyThread = {&Hotkeys::tick, this, exitSignal.get_future()};
+    keypressThread = std::thread(&Hotkeys::tickKeys, this, kpExitSignal.get_future());
+    callbackThread = std::thread(&Hotkeys::tickCalls, this, cbExitSignal.get_future());
 }
 
 Hotkeys::~Hotkeys() {
-    exitSignal.set_value();
-    hotkeyThread.join();
+    kpExitSignal.set_value();
+    keypressThread.join();
+
+    cbExitSignal.set_value();
+    callbackThread.join();
 }
 
 void Hotkeys::add(Identifier&& id, VoidCallback&& action) {
@@ -28,46 +33,50 @@ void Hotkeys::addHeld(Identifier&& id, Callback&& action) {
     hotkeys.push_back({std::move(hotkey), HotkeyType::HELD});
 }
 
-namespace {
-    void handleOneshot(Hotkey& hotkey, bool newState) {
-        if (!hotkey.state && newState)
-            std::thread{hotkey.callback, true}.detach();
-    }
-
-    void handleToggle(Hotkey& hotkey, bool newState) {
-        if (!hotkey.state && newState) {
-            hotkey.toggle = !hotkey.toggle;
-            std::thread{hotkey.callback, hotkey.toggle}.detach();
-        }
-    }
-
-    void handleHeld(Hotkey& hotkey, bool newState) {
-        if (hotkey.state && !newState)
-            std::thread{hotkey.callback, false}.detach();
-
-        if (!hotkey.state && newState)
-            std::thread{hotkey.callback, true}.detach();
-    }
+void Hotkeys::pushCallback(std::function<void(bool)>& cb, bool arg) {
+    queueLock.lock();
+    callQueue.push(std::bind(cb, arg));
+    queueLock.unlock();
 }
 
-void Hotkeys::tick(std::future<void> exitSignal) {
+void Hotkeys::tickKeys(std::future<void> exitSignal) {
     while (exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout) {
         for (auto& pair : hotkeys) {
-            auto&[hotkey, type] = pair;
+            auto& hotkey = pair.first;
+            auto& type = pair.second;
             bool newState = static_cast<bool>(GetAsyncKeyState(hotkey.id.key) & VK_PRESSED);
             switch (type) {
                 case HotkeyType::ONESHOT:
-                    handleOneshot(hotkey, newState);
+                    if (!hotkey.state && newState)
+                        pushCallback(hotkey.callback, true);
                     break;
                 case HotkeyType::TOGGLE:
-                    handleToggle(hotkey, newState);
+                    if (!hotkey.state && newState) {
+                        hotkey.toggle = !hotkey.toggle;
+                        pushCallback(hotkey.callback, hotkey.toggle);
+                    }
                     break;
                 case HotkeyType::HELD:
-                    handleHeld(hotkey, newState);
+                    if (hotkey.state != newState)
+                        pushCallback(hotkey.callback, newState);
                     break;
             }
             hotkey.state = newState;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+}
+
+void Hotkeys::tickCalls(std::future<void> exitSignal) {
+    while (exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout) {
+        std::function<void()> fn;
+        queueLock.lock();
+        if (!callQueue.empty()) {
+            fn = callQueue.front();
+            callQueue.pop();
+        }
+        queueLock.unlock();
+        if (fn) fn();
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }

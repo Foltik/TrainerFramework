@@ -1,9 +1,9 @@
 #pragma once
 
-#include <xstring>
+#include <string>
 
 namespace Console {
-    void setTitle(std::string_view title);
-	void setSize(short x, short y);
-	void setFlags(long flags);
+    void setTitle(const std::string& title);
+    void setSize(short x, short y);
+    void setFlags(long flags);
 };
