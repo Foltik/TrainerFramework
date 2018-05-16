@@ -11,4 +11,17 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0 -m32")
 endif()
 
-add_executable(output src/main.cpp src/Console.h src/Console.cpp src/Memory.h src/Memory.cpp src/Hotkeys.cpp src/Hotkeys.h)
+set(SOURCES "src/main.cpp"
+            "src/Console.h" "src/Console.cpp"
+            "src/Hotkeys.h" "src/Hotkeys.cpp"
+            "src/Memory.h"
+            "src/Process.h")
+
+if (WIN32)
+    set(SOURCES "${SOURCES}" "src/platform/win32/mem/Process.cpp"
+                             "src/platform/win32/mem/Memory.cpp")
+else()
+    message(FATAL_ERROR "Platform not supported.")
+endif()
+
+add_executable(output ${SOURCES})

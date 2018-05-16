@@ -1,44 +1,68 @@
 #include "Console.h"
-#include "Memory.h"
 #include "Hotkeys.h"
+#include "Process.h"
+#include "Memory.h"
+
+#include <iostream>
 
 #include <Windows.h>
 
 int main() {
     Console::setTitle("StardewFisher");
-    std::string processName = "StardewModdingAPI.exe";
-    Memory mem(processName);
-    Hotkeys hotkeys;
 
-    hotkeys.add(VK_F6, "Increase Runspeed", HotkeyType::HELD, (const std::function<void(bool)>&)[&](bool enabled) {
+    Process p("StardewModdingAPI.exe");
+    if (!p) {
+        std::cout << "Failed to attach to StardewModdingAPI.exe" << std::endl;
+        std::cout << "Exiting..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        return 1;
+    } else {
+        std::cout << "Attached to StardewModdingAPI.exe" << std::endl;
+    }
+
+
+    Hotkeys hotkeys;
+    hotkeys.add(VK_F5, "Speedhack", HotkeyType::TOGGLE, (const std::function<void(bool)>&)[&](bool enabled) {
         static uintptr_t addr = 0;
         static uintptr_t code = 0;
 
         if (enabled) {
-            // Farmer::getRunSpeed
-            addr = mem.findPattern({0x5D, 0x00, 0xD9, 0x45, 0x00, 0x8D, 0x65, 0xF4, 0x5B, 0x5E, 0x5F, 0x5D, 0xC3},
-                                   "x?xx?xxxxxxxx", PAGE_EXECUTE_READWRITE, 16);
+            addr = Mem::findSignature<13>(p, {0x5D, 0xE8, 0xD9, 0x45, 0xE8, 0x8D, 0x65, 0xF4, 0x5B, 0x5E, 0x5F, 0x5D, 0xC3},
+                                                       "", 16,
+                                                       Mem::Protect::READ | Mem::Protect::WRITE |
+                                                       Mem::Protect::EXECUTE);
+
+            if (!addr)
+                return;
 
             // Allocate a page for the hook
-            code = mem.allocate(0x1000, PAGE_EXECUTE_READWRITE);
+            code = Mem::alloc(p, 0x1000, Mem::Protect::READ | Mem::Protect::WRITE | Mem::Protect::EXECUTE);
 
             // Write the hook bytecode
-            mem.writeData<uint8_t>(code, {0xDD, 0xD8, 0xD9, 0x05});
-            mem.write<uintptr_t>(code + 0x4, code + 0x12);
-            mem.writeData<uint8_t>(code + 0x8, {0x8D, 0x65, 0xF4, 0x5B, 0x5E, 0xE9});
-            // Return to the original function
-            mem.write<uintptr_t>(code + 0xE, (addr + 0xA) - (code + 0x12));
-            mem.write<float>(code + 0x12, 15.0f);
+            Mem::writeBytes<18>(p, code, {0xDD, 0xD8,                         // fstp  st(0)
+                                          0xD9, 0x05, 0x00, 0x00, 0x00, 0x00, // fld   dword ptr [code + 0x12]
+                                          0x8D, 0x65, 0xF4,                   // lea   esp, [ebp - 0C]
+                                          0x5B,                               // pop   ebx
+                                          0x5E,                               // pop   esi
+                                          0xE9, 0x00, 0x00, 0x00, 0x00});     // jmp   addr + 0xA
+
+            // Replace zeros with the actual pointers we need
+            Mem::write<uintptr_t>(p, code + 0x4, code + 0x12);
+            Mem::write<uintptr_t>(p, code + 0xE, (addr + 0xA) - (code + 0x12));
+
+            // Speed
+            Mem::write<float>(p, code + 0x12, 15.0f);
 
             // Patch the function to jump to the hook
-            mem.write<uint8_t>(addr + 0x5, 0xE9);
-            mem.write<uintptr_t>(addr + 0x6, code - (addr + 0xA));
+            Mem::write(p, addr + 0x5, 0xE9);
+            Mem::write(p, addr + 0x6, code - (addr + 0xA));
         } else {
-            // Free the allocated page
-            mem.free(code);
+            Mem::free(p, code);
 
             // Restore the original function code
-            mem.writeData<uint8_t>(addr + 0x5, {0x8D, 0x65, 0xF4, 0x5B, 0x5E});
+            Mem::writeBytes<5>(p, addr + 0x5, {0x8D, 0x65, 0xF4,
+                                               0x5B,
+                                               0x5E});
         }
     });
 
