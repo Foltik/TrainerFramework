@@ -1,6 +1,6 @@
-#include "../../../Memory.h"
+#include "../../../mem/Memory.h"
 
-#include "../../../Process.h"
+#include "../../../mem/Process.h"
 
 #include <Windows.h>
 
@@ -48,20 +48,26 @@ namespace {
 
 
 
-size_t Mem::writeData(const Process& proc, uintptr_t address, const void* data, size_t size) {
-    size_t bytesWritten;
-    WriteProcessMemory(reinterpret_cast<HANDLE>(proc.getHandle()),
-                       reinterpret_cast<void*>(address), data,
-                       size, reinterpret_cast<SIZE_T*>(&bytesWritten));
-    return bytesWritten;
+bool Mem::writeData(const Process& proc, uintptr_t address, const void* data, size_t size) {
+    return static_cast<bool>(WriteProcessMemory(reinterpret_cast<HANDLE>(proc.getHandle()),
+                                                reinterpret_cast<void*>(address), data,
+                                                size, nullptr));
 }
 
-size_t Mem::readData(const Process& proc, uintptr_t address, void* out, size_t size) {
-    size_t bytesRead;
-    ReadProcessMemory(reinterpret_cast<HANDLE>(proc.getHandle()),
-                      reinterpret_cast<LPCVOID>(address), out,
-                      size, reinterpret_cast<SIZE_T*>(&bytesRead));
-    return bytesRead;
+bool Mem::readData(const Process& proc, uintptr_t address, void* out, size_t size) {
+    return static_cast<bool>(ReadProcessMemory(reinterpret_cast<HANDLE>(proc.getHandle()),
+                                               reinterpret_cast<LPCVOID>(address), out,
+                                               size, nullptr));
+}
+
+bool Mem::writeBytes(const Process& proc, uintptr_t address, const std::vector<uint8_t>& bytes) {
+    writeData(proc, address, static_cast<const void*>(bytes.data()), bytes.size());
+}
+
+std::vector<uint8_t> Mem::readBytes(const Process& proc, uintptr_t address, size_t size) {
+    std::vector<uint8_t> data(size);
+    readData(proc, address, static_cast<void*>(data.data()), size);
+    return data;
 }
 
 

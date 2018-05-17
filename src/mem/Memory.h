@@ -23,9 +23,9 @@ namespace Mem {
 
 
 
-    size_t writeData(const Process& proc, uintptr_t address, const void* data, size_t size);
+    bool writeData(const Process& proc, uintptr_t address, const void* data, size_t size);
 
-    size_t readData(const Process& proc, uintptr_t address, void* out, size_t size);
+    bool readData(const Process& proc, uintptr_t address, void* out, size_t size);
 
     template<typename T>
     bool write(const Process& proc, uintptr_t address, const T& value) {
@@ -50,6 +50,10 @@ namespace Mem {
         readData(proc, address, static_cast<void*>(data.data()), data.size());
         return data;
     };
+
+    bool writeBytes(const Process& proc, uintptr_t address, const std::vector<uint8_t>& bytes);
+
+    std::vector<uint8_t> readBytes(const Process& proc, uintptr_t address, size_t size);
 
 
 
@@ -91,10 +95,11 @@ namespace Mem {
             readData(proc, page.start, static_cast<void*>(pageBytes.data()), page.size);
 
             bool useMask = mask != "";
-            for (int i = 0; i < page.size - bytes.size(); i += align)
+            for (int i = 0; i < page.size - bytes.size(); i += align) {
                 if (useMask ? equalsMask(pageBytes.data() + i, bytes.data(), mask.data()) :
-                              equals(bytes.data(), pageBytes.data() + i, bytes.size()))
+                    equals(bytes.data(), pageBytes.data() + i, bytes.size()))
                     return page.start + i;
+            }
         }
         return 0;
     }
