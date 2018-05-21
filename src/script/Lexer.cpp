@@ -10,10 +10,12 @@ Lexer::Lexer(std::string_view source) {
 }
 
 void Lexer::next() {
+    col++;
     currChar = ++pos >= src.end() ? '\0' : *pos;
 }
 
 void Lexer::next(int offset) {
+    col += offset;
     pos = pos + offset;
     currChar = pos >= src.end() ? '\0' : *pos;
 }
@@ -49,7 +51,7 @@ Lexer::Token Lexer::number() {
 }
 
 Lexer::Token Lexer::hexNumber() {
-    long num = std::strtol(pos, nullptr, 16);
+    int num = std::strtol(pos, nullptr, 16);
     while (isxdigit(currChar) || currChar == 'x')
         next();
 
@@ -57,7 +59,7 @@ Lexer::Token Lexer::hexNumber() {
 }
 
 Lexer::Token Lexer::decNumber() {
-    long num = std::strtol(pos, nullptr, 10);
+    int num = std::strtol(pos, nullptr, 10);
     while (isdigit(currChar))
         next();
 
@@ -88,57 +90,132 @@ Lexer::Token Lexer::nextToken() {
         char ch = currChar;
         next();
 
-        if (ch == '\n')
-            return {Type::Eol};
+        if (ch == '\n') {
+            line++;
+            col = 0;
+            return {Type::Eol, {}};
+        }
 
         if (ch == '+')
-            return {Type::Plus};
+            return {Type::Plus, {}};
 
         if (ch == '-')
-            return {Type::Minus};
+            return {Type::Minus, {}};
 
         if (ch == '*')
-            return {Type::Mul};
+            return {Type::Mul, {}};
 
         if (ch == '/')
-            return {Type::Div};
+            return {Type::Div, {}};
 
         if (ch == ';')
-            return {Type::Semi};
+            return {Type::Semi, {}};
 
         if (ch == ':')
-            return {Type::Colon};
+            return {Type::Colon, {}};
 
         if (ch == ',')
-            return {Type::Comma};
+            return {Type::Comma, {}};
 
         if (ch == '.')
-            return {Type::Dot};
+            return {Type::Dot, {}};
 
         if (ch == '$')
-            return {Type::Dollar};
+            return {Type::Dollar, {}};
 
         if (ch == '%')
-            return {Type::Percent};
+            return {Type::Percent, {}};
 
         if (ch == '(')
-            return {Type::Lparen};
+            return {Type::Lparen, {}};
 
         if (ch == ')')
-            return {Type::Rparen};
+            return {Type::Rparen, {}};
 
         if (ch == '[')
-            return {Type::Lbracket};
+            return {Type::Lbracket, {}};
 
         if (ch == ']')
-            return {Type::Rbracket};
+            return {Type::Rbracket, {}};
 
         if (ch == '{')
-            return {Type::Lcurl};
+            return {Type::Lcurl, {}};
 
         if (ch == '}')
-            return {Type::Rcurl};
+            return {Type::Rcurl, {}};
     }
 
-    return {Type::Eof};
+    return {Type::Eof, {}};
+}
+
+int Lexer::getLine() {
+    return line;
+}
+
+int Lexer::getCol() {
+    return col;
+}
+
+std::string Lexer::Token::strFromType(Lexer::Type type) {
+    if (type == Type::Eol)
+        return "'EOL'";
+
+    if (type == Type::Eof)
+        return "'EOF'";
+
+    if (type == Type::Plus)
+        return "'+'";
+
+    if (type == Type::Minus)
+        return "'-'";
+
+    if (type == Type::Mul)
+        return "'*'";
+
+    if (type == Type::Div)
+        return "'/'";
+
+    if (type == Type::Semi)
+        return "';'";
+
+    if (type == Type::Colon)
+        return "':'";
+
+    if (type == Type::Comma)
+        return "','";
+
+    if (type == Type::Dot)
+        return "'.'";
+
+    if (type == Type::Dollar)
+        return "'$'";
+
+    if (type == Type::Percent)
+        return "'%'";
+
+    if (type == Type::Lparen)
+        return "'('";
+
+    if (type == Type::Rparen)
+        return "')'";
+
+    if (type == Type::Lbracket)
+        return "'['";
+
+    if (type == Type::Rbracket)
+        return "']'";
+
+    if (type == Type::Lcurl)
+        return "'{'";
+
+    if (type == Type::Rcurl)
+        return "'}'";
+
+    if (type == Type::Id)
+        return "Identifier";
+
+    if (type == Type::Integer)
+        return "Integer";
+
+    return "";
 }

@@ -2,13 +2,28 @@
 
 #include "AST.h"
 
-#include <iostream> //TODO: REMOVE
+#include <iostream>
+#include <iomanip>
 
-void Parser::expectNext(const Type& type) {
-    if (currToken.type == type)
-        currToken = lexer.nextToken();
-    else
-        std::cout << "error yo" << std::endl;
+void Parser::expect(Parser::Type type) {
+    if (currToken.type != type) {
+        std::stringstream ss;
+        ss << "Error: expected " << Token::strFromType(type)
+           << " at L" << lastLine << ":" << lastCol
+           << ", got " << Token::strFromType(currToken.type);
+        throw std::runtime_error(ss.str());
+    }
+}
+
+void Parser::pop(Type type) {
+    expect(type);
+    pop();
+}
+
+void Parser::pop() {
+    lastLine = lexer.getLine();
+    lastCol = lexer.getCol();
+    currToken = lexer.nextToken();
 }
 
 Program Parser::program() {
@@ -23,9 +38,9 @@ Program Parser::program() {
 Block Parser::block() {
     Block block;
 
-    expectNext(Type::Eol);
+    pop(Type::Eol);
     block.injection = injection();
-    expectNext(Type::Eol);
+    pop(Type::Eol);
 
     while (currToken.type != Type::Eol && currToken.type != Type::Eof)
         block.statements.push_back(statement());
@@ -36,64 +51,34 @@ Block Parser::block() {
 Injection Parser::injection() {
     Injection inj;
 
-    expectNext(Type::Lcurl);
+    pop(Type::Lcurl);
     inj.expr = expression();
-    expectNext(Type::Rcurl);
-    expectNext(Type::Colon);
+    pop(Type::Rcurl);
+    pop(Type::Colon);
 
     return inj;
 }
 
 
-
-
-namespace {
-    using Type = Lexer::Token::Type;
-    using Op = Operator;
-
-    Op opFromToken(Type type) {
-        switch(type) {
-            case Type::Plus:
-                return Op::Plus;
-            case Type::Minus:
-                return Op::Minus;
-            case Type::Mul:
-                return Op::Mul;
-            case Type::Div:
-                return Op::Div;
-        }
-    }
-}
-
 Expression Parser::expression() {
-    Expression expr;
-
-    expr = term();
+    Expression expr = term();
 
     while (currToken.type == Type::Plus || currToken.type == Type::Minus) {
         Token token = currToken;
-        expectNext(token.type);
-
-        BinaryOp op{expr, opFromToken(token.type), term()};
-
-        expr = {op};
+        pop(token.type);
+        expr = BinaryOp{expr, opFromToken(token), term()};
     }
 
     return expr;
 }
 
 Expression Parser::term() {
-    Expression expr;
-
-    expr = factor();
+    Expression expr = factor();
 
     while (currToken.type == Type::Mul || currToken.type == Type::Div) {
         Token token = currToken;
-        expectNext(token.type);
-
-        BinaryOp op{expr, opFromToken(token.type), factor()};
-
-        expr = {op};
+        pop(token.type);
+        expr = BinaryOp{expr, opFromToken(token), factor()};
     }
 
     return expr;
@@ -101,61 +86,60 @@ Expression Parser::term() {
 
 Expression Parser::factor() {
     Token token = currToken;
-    if (token.type == Type::Plus) {
-        expectNext(Type::Plus);
-        UnaryOp op{opFromToken(token.type), factor()};
-        return op;
-    } else if (token.type == Type::Minus) {
-        expectNext(Type::Minus);
-        UnaryOp op{opFromToken(token.type), factor()};
-        return op;
-    } else if (token.type == Type::Integer) {
-        Number num{std::get<long>(token.value)};
-        expectNext(Type::Integer);
-        return num;
-    } else if (token.type == Type::Float) {
-        Number num{std::get<float>(token.value)};
-        expectNext(Type::Float);
-        return num;
-    } else if (token.type == Type::Lbracket) {
-        expectNext(Type::Lbracket);
-        Dereference deref{expression()};
-        expectNext(Type::Rbracket);
-        return deref;
-    } else if (token.type == Type::Lparen) {
-        expectNext(Type::Lparen);
-        Expression expr = expression();
-        expectNext(Type::Rparen);
-        return expr;
-    } else if (token.type == Type::Percent) {
-        return reg();
-    } else {
-        return variable();
+    Type type = token.type;
+
+    if (type == Type::Plus || type == Type::Minus) {
+        pop();
+        return UnaryOp{opFromToken(token), factor()};
     }
+
+    if (type == Type::Integer) {
+        return number<int>(type);
+    }
+
+    if (type == Type::Float) {
+        return number<float>(type);
+    }
+
+    if (type == Type::Lbracket) {
+        pop(Type::Lbracket);
+        Dereference deref{expression()};
+        pop(Type::Rbracket);
+        return deref;
+    };
+
+    if (type == Type::Lparen) {
+        pop(Type::Lparen);
+        Expression expr = expression();
+        pop(Type::Rparen);
+        return expr;
+    };
+
+    if (type == Type::Percent) {
+        pop(Type::Percent);
+        Register r{string()};
+        return r;
+    }
+
+    return Identifier{string()};
 }
 
 Expression Parser::variable() {
-    Identifier id;
-    id.name = std::get<std::string_view>(currToken.value);
-    expectNext(Type::Id);
-    return {id};
+    auto id = string();
+    return Identifier{id};
 }
 
 Expression Parser::reg() {
-    expectNext(Type::Percent);
-    Register reg;
-    reg.name = std::get<std::string_view>(currToken.value);
-    expectNext(Type::Id);
-    return {reg};
+    pop(Type::Percent);
+    return Register{string()};
 }
-
 
 
 Statement Parser::statement() {
     Token token = currToken;
     if (token.type == Type::Dot) {
         return directive();
-    } else if (token.type == Type::Dollar){
+    } else if (token.type == Type::Dollar) {
         return label();
     } else {
         return instruction();
@@ -163,44 +147,61 @@ Statement Parser::statement() {
 }
 
 Statement Parser::label() {
-    expectNext(Type::Dollar);
+    pop(Type::Dollar);
 
-    Label label;
-    label.id.name = std::get<std::string_view>(currToken.value);
-    expectNext(Type::Id);
+    auto str = string();
+    Label label{str};
 
-    expectNext(Type::Colon);
-    expectNext(Type::Eol);
-    return {label};
+    pop(Type::Colon);
+    pop(Type::Eol);
+    return label;
 }
 
 Statement Parser::directive() {
-    expectNext(Type::Dot);
+    pop(Type::Dot);
 
     Directive directive;
+    expect(Type::Id);
     directive.id.name = std::get<std::string_view>(currToken.value);
-    expectNext(Type::Id);
+    pop();
 
     while (currToken.type != Type::Eol) {
         directive.args.emplace_back(expression());
         if (currToken.type == Type::Comma)
-            expectNext(Type::Comma);
+            pop(Type::Comma);
     }
 
-    expectNext(Type::Eol);
-    return {directive};
+    pop(Type::Eol);
+    return directive;
 }
 
 Statement Parser::instruction() {
     Instruction instr;
     instr.id.name = std::get<std::string_view>(currToken.value);
-    expectNext(Type::Id);
+    pop(Type::Id);
 
     while (currToken.type != Type::Eol)
         instr.args.emplace_back(expression());
 
-    expectNext(Type::Eol);
+    pop(Type::Eol);
 
-    return {instr};
+    return instr;
 }
 
+std::string_view Parser::string() {
+    expect(Type::Id);
+    auto str = std::get<std::string_view>(currToken.value);
+    pop();
+    return str;
+}
+
+Operator Parser::opFromToken(const Parser::Token& token) {
+    if (token.type == Type::Plus)
+        return Operator::Plus;
+    else if (token.type == Type::Minus)
+        return Operator::Minus;
+    else if (token.type == Type::Mul)
+        return Operator::Mul;
+    else
+        return Operator::Div;
+}
