@@ -22,8 +22,8 @@ Process::Process(const std::string& processName) {
 }
 
 Process::~Process() {
-    CloseHandle(reinterpret_cast<HANDLE>(nativeHandle));
-    valid = false;
+    if (valid)
+        CloseHandle(reinterpret_cast<HANDLE>(nativeHandle));
 }
 
 uintptr_t Process::getHandle() const {
