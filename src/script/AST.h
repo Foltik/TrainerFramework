@@ -5,19 +5,25 @@
 #include <vector>
 
 struct Identifier;
+struct Register;
 struct Number;
 struct BinaryOp;
 struct UnaryOp;
 struct Dereference;
 
 using Expression = boost::variant<
-        boost::recursive_wrapper<Identifier>,
-        boost::recursive_wrapper<Number>,
+        Identifier,
+        Register,
+        Number,
         boost::recursive_wrapper<BinaryOp>,
         boost::recursive_wrapper<UnaryOp>,
         boost::recursive_wrapper<Dereference>>;
 
 struct Identifier {
+    std::string_view name;
+};
+
+struct Register {
     std::string_view name;
 };
 
@@ -54,9 +60,9 @@ struct Directive;
 struct Instruction;
 
 using Statement = boost::variant<
-        boost::recursive_wrapper<Label>,
-        boost::recursive_wrapper<Directive>,
-        boost::recursive_wrapper<Instruction>>;
+        Label,
+        Directive,
+        Instruction>;
 
 struct Label {
     Identifier id;
