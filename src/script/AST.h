@@ -28,7 +28,7 @@ struct Register {
 };
 
 struct Number {
-    boost::variant<long, float> value;
+    boost::variant<int, float> value;
 };
 
 enum class Operator {

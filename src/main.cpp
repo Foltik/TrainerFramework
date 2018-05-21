@@ -10,7 +10,9 @@
 #include <Windows.h>
 
 int main() {
-    auto lol = Script(R"(
+    Console::setTitle("TrainerFramework");
+
+    auto testScript = Script(R"(
         {addr+0x5}:
             jmp     code
         $return:
@@ -24,12 +26,10 @@ int main() {
             jmp     return
         $speed:
             .dfl     0f15.0
-    )", {});
+    )", {{"addr", 0xDEADBEEF}, {"code", 0xCAFED00D}});
 
-    return 0;
 
-    Console::setTitle("TrainerFramework");
-
+    /*
     Process p("StardewModdingAPI.exe");
     if (!p) {
         std::cout << "Failed to attach to StardewModdingAPI.exe" << std::endl;
@@ -87,6 +87,8 @@ int main() {
     while (!hotkeys.shouldExit(VK_ESCAPE)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
+
+    */
 
     return 0;
 }

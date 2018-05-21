@@ -24,6 +24,6 @@ private:
             boost::hana::overload(std::forward<Visitors>(visitors)...),
             std::forward<Variant>(variant)
         );
-    };
+    }
 };
 

@@ -53,7 +53,7 @@ void Assembler::printExpr(const Expression& expr, int indent) {
             std::cout << "Number: ";
             visit(x.value,
                 [](float f) { std::cout << "Float " << f; },
-                [](long n) { std::cout << "Long " << n; }
+                [](int n) { std::cout << "Long " << n; }
             );
             std::cout << std::endl;
         },

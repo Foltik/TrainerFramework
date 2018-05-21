@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(TrainerFramework)
 set(CMAKE_CXX_STANDARD 17)
-set(${CMAKE_CXX_FLAGS} "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
 
 # Main sources
 set(SOURCES "src/main.cpp"
@@ -14,6 +14,7 @@ set(SOURCES "src/main.cpp"
             "src/mem/Process.h"
             "src/script/Script.h" "src/script/Script.cpp"
             "src/script/Lexer.h" "src/script/Lexer.cpp"
+            "src/script/Parser.h" "src/script/Parser.cpp"
             "src/script/Assembler.h" "src/script/Assembler.cpp")
 
 # Set the target architecture here
@@ -41,7 +42,6 @@ endif()
 if (${TARGET_ARCH} MATCHES x86)
     message(STATUS "Targeting x86")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
-    set(SOURCES "${SOURCES}" "src/platform/win32/script/Compile.cpp" src/script/AST.h src/script/Parser.cpp src/script/Parser.h)
 elseif(${TARGET_ARCH} MATCHES x64)
     message(STATUS "Targeting x64")
 else()

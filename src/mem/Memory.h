@@ -41,15 +41,15 @@ namespace Mem {
 
     template<size_t Size>
     bool writeBytes(const Process& proc, uintptr_t address, const std::array<uint8_t, Size>& bytes) {
-        writeData(proc, address, static_cast<const void*>(bytes.data()), bytes.size());
-    };
+        return writeData(proc, address, static_cast<const void*>(bytes.data()), bytes.size());
+    }
 
     template<size_t Size>
     std::array<uint8_t, Size> readBytes(const Process& proc, uintptr_t address) {
         std::array<uint8_t, Size> data;
         readData(proc, address, static_cast<void*>(data.data()), data.size());
         return data;
-    };
+    }
 
     bool writeBytes(const Process& proc, uintptr_t address, const std::vector<uint8_t>& bytes);
 
@@ -80,7 +80,7 @@ namespace Mem {
                 if (*a != *b)
                     return false;
             return true;
-        };
+        }
     }
 
     template<size_t Size>

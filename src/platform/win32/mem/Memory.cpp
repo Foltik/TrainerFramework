@@ -61,7 +61,7 @@ bool Mem::readData(const Process& proc, uintptr_t address, void* out, size_t siz
 }
 
 bool Mem::writeBytes(const Process& proc, uintptr_t address, const std::vector<uint8_t>& bytes) {
-    writeData(proc, address, static_cast<const void*>(bytes.data()), bytes.size());
+    return writeData(proc, address, static_cast<const void*>(bytes.data()), bytes.size());
 }
 
 std::vector<uint8_t> Mem::readBytes(const Process& proc, uintptr_t address, size_t size) {
