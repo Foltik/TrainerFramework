@@ -127,6 +127,8 @@ Expression Parser::factor() {
         Expression expr = expression();
         expectNext(Type::Rparen);
         return expr;
+    } else if (token.type == Type::Percent) {
+        return reg();
     } else {
         return variable();
     }
@@ -137,6 +139,14 @@ Expression Parser::variable() {
     id.name = std::get<std::string_view>(currToken.value);
     expectNext(Type::Id);
     return {id};
+}
+
+Expression Parser::reg() {
+    expectNext(Type::Percent);
+    Register reg;
+    reg.name = std::get<std::string_view>(currToken.value);
+    expectNext(Type::Id);
+    return {reg};
 }
 
 

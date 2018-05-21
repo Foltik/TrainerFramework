@@ -29,6 +29,7 @@ private:
     Expression term();
     Expression factor();
     Expression variable();
+    Expression reg();
 
     Token currToken;
     Lexer& lexer;

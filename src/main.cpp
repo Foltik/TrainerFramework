@@ -19,8 +19,8 @@ int main() {
             fpop
             fld     [speed]
             .db      0x8D, 0x65, 0xF4
-            pop     ebx
-            pop     esi
+            pop     %ebx
+            pop     %esi
             jmp     return
         $speed:
             .dfl     0f15.0

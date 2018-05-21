@@ -21,6 +21,7 @@ public:
             Comma,
             Dot,
             Dollar,
+            Percent,
             Lparen,
             Rparen,
             Lbracket,
@@ -29,7 +30,7 @@ public:
             Rcurl
         } type;
 
-        std::variant<std::string_view, long, float> value;
+        std::variant<std::monostate, long, float, std::string_view> value;
     };
 
 public:

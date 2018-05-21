@@ -118,6 +118,9 @@ Lexer::Token Lexer::nextToken() {
         if (ch == '$')
             return {Type::Dollar};
 
+        if (ch == '%')
+            return {Type::Percent};
+
         if (ch == '(')
             return {Type::Lparen};
 

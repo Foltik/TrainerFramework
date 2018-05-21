@@ -44,6 +44,10 @@ void Assembler::printExpr(const Expression& expr, int indent) {
             printIndent(indent);
             std::cout << "Identifier: " << x.name << std::endl;
         },
+        [&](Register r) {
+            printIndent(indent);
+            std::cout << "Register: " << r.name << std::endl;
+        },
         [&](Number x) {
             printIndent(indent);
             std::cout << "Number: ";
