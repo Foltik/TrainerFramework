@@ -12,10 +12,12 @@ set(SOURCES "src/main.cpp"
             "src/Hotkeys.h" "src/Hotkeys.cpp"
             "src/mem/Memory.h"
             "src/mem/Process.h"
+            "src/script/AST.h"
             "src/script/Script.h" "src/script/Script.cpp"
             "src/script/Lexer.h" "src/script/Lexer.cpp"
             "src/script/Parser.h" "src/script/Parser.cpp"
-            "src/script/Assembler.h" "src/script/Assembler.cpp")
+            "src/script/Assembler.h" "src/script/Assembler.cpp"
+            "src/script/Encode.h")
 
 # Set the target architecture here
 set(TARGET_ARCH x86)
@@ -32,7 +34,9 @@ endif()
 # OS Specific Code
 if (WIN32)
     set(SOURCES "${SOURCES}" "src/platform/win32/mem/Process.cpp"
-                             "src/platform/win32/mem/Memory.cpp")
+                             "src/platform/win32/mem/Memory.cpp"
+                             "src/platform/win32/script/EncodeDirective.cpp"
+                             "src/platform/win32/script/EncodeInstruction.cpp")
 else()
     message(FATAL_ERROR "Platform not supported.")
 endif()

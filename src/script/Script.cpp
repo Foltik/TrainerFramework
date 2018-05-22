@@ -20,7 +20,15 @@ Script::Script(const std::string& sourceCode, const std::map<std::string, uintpt
     Program prog = parser.program();
 
     Assembler assembler;
-    assembler.assemble(prog);
+    auto bytes = assembler.assemble(prog, variables);
+
+    for (const auto& pair : bytes) {
+        std::cout << std::hex << pair.first << ":" << std::endl;
+        std::cout << "    " << std::endl;
+        for (const auto& byte : pair.second)
+            std::cout << std::hex << byte << " ";
+        std::cout << std::endl;
+    }
 }
 
 void Script::execute(const Process& p) {

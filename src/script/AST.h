@@ -8,7 +8,6 @@ struct Identifier;
 struct Register;
 struct Number;
 struct BinaryOp;
-struct UnaryOp;
 struct Dereference;
 
 using Expression = boost::variant<
@@ -16,7 +15,6 @@ using Expression = boost::variant<
         Register,
         Number,
         boost::recursive_wrapper<BinaryOp>,
-        boost::recursive_wrapper<UnaryOp>,
         boost::recursive_wrapper<Dereference>>;
 
 struct Identifier {
@@ -42,11 +40,6 @@ struct BinaryOp {
     Expression left;
     Operator op;
     Expression right;
-};
-
-struct UnaryOp {
-    Operator op;
-    Expression operand;
 };
 
 struct Dereference {

@@ -75,7 +75,7 @@ Expression Parser::expression() {
 Expression Parser::term() {
     Expression expr = factor();
 
-    while (currToken.type == Type::Mul || currToken.type == Type::Div) {
+    while (currToken.type == Type::Mul) {
         Token token = currToken;
         pop(token.type);
         expr = BinaryOp{expr, opFromToken(token), factor()};
@@ -87,11 +87,6 @@ Expression Parser::term() {
 Expression Parser::factor() {
     Token token = currToken;
     Type type = token.type;
-
-    if (type == Type::Plus || type == Type::Minus) {
-        pop();
-        return UnaryOp{opFromToken(token), factor()};
-    }
 
     if (type == Type::Integer) {
         return number<int>(type);

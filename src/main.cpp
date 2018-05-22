@@ -18,7 +18,7 @@ int main() {
         $return:
 
         {code}:
-            fpop
+            .fpop
             fld     [speed]
             .db      0x8D, 0x65, 0xF4
             pop     %ebx
