@@ -23,13 +23,6 @@ private:
 
     uintptr_t evalExpr(const Expression& expr);
 
-    template <typename Variant, typename... Visitors>
-    auto visit(Variant&& variant, Visitors&&... visitors) {
-        return boost::apply_visitor(
-            boost::hana::overload(std::forward<Visitors>(visitors)...),
-            std::forward<Variant>(variant)
-        );
-    }
 
     std::map<std::string, uintptr_t> symbolTable;
 };
